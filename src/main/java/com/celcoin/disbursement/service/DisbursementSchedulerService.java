@@ -11,9 +11,11 @@ import com.celcoin.disbursement.repository.DisbursementBatchRepository;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.IsoFields;
@@ -24,20 +26,22 @@ public class DisbursementSchedulerService {
 
     private static final Logger logger = LoggerFactory.getLogger(DisbursementSchedulerService.class);
 
-    private final DisbursementBatchRepository batchRepository;
-    private final EventPublisher eventPublisher;
-    private final IdempotencyService idempotencyService;
+    @Autowired
+    private DisbursementBatchRepository batchRepository;
 
-    public DisbursementSchedulerService(DisbursementBatchRepository batchRepository, EventPublisher eventPublisher, IdempotencyService idempotencyService) {
-        this.batchRepository = batchRepository;
-        this.eventPublisher = eventPublisher;
-        this.idempotencyService = idempotencyService;
-    }
+    @Autowired
+    private EventPublisher eventPublisher;
+
+    @Autowired
+    private IdempotencyService idempotencyService;
+
+    @Autowired
+    private Clock clock;
 
     @Scheduled(fixedRate = 60000) // Roda a cada minuto
     @Transactional
     public void triggerEligibleBatches() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         logger.info("Scheduler iniciado em {}: procurando por lotes elegíveis", now);
 
         List<DisbursementBatch> scheduledBatches = batchRepository

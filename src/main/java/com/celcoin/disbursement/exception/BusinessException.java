@@ -9,7 +9,7 @@ public class BusinessException extends ExceptionDefinition {
         super(errorCode, message, ex);
     }
 
-    public BusinessException(String message, String errorCode) {
-        super(message, errorCode);
+    public BusinessException(String errorCode, String message) {
+        super(errorCode, message);
     }
 }

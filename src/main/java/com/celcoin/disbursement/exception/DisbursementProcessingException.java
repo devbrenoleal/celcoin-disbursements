@@ -6,7 +6,7 @@ public class DisbursementProcessingException extends ExceptionDefinition {
         super(errorCode, message, ex);
     }
 
-    public DisbursementProcessingException(String message, String errorCode) {
-        super(message, errorCode);
+    public DisbursementProcessingException(String errorCode, String message) {
+        super(errorCode, message);
     }
 }

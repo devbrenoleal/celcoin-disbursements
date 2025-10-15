@@ -12,7 +12,7 @@ public abstract class ExceptionDefinition extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    public ExceptionDefinition(String message, String errorCode) {
+    public ExceptionDefinition(String errorCode, String message) {
         super(message);
         this.errorCode = errorCode;
     }

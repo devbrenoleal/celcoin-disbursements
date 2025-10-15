@@ -5,7 +5,7 @@ public class ResourceNotFoundException extends ExceptionDefinition {
         super(errorCode, message, ex);
     }
 
-    public ResourceNotFoundException(String message, String errorCode) {
-        super(message, errorCode);
+    public ResourceNotFoundException(String errorCode, String message) {
+        super(errorCode, message);
     }
 }

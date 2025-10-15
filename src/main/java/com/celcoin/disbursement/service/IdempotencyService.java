@@ -4,10 +4,10 @@ import com.celcoin.disbursement.model.entity.ProcessedEvent;
 import com.celcoin.disbursement.repository.ProcessedEventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class IdempotencyService {
@@ -26,17 +26,19 @@ public class IdempotencyService {
      * @return {@code true} se o evento já foi processado (duplicado), {@code false} caso contrário.
      */
     public boolean isDuplicate(String eventId, String consumerGroup) {
-        try {
-            ProcessedEvent eventRecord = ProcessedEvent.builder()
-                    .eventId(eventId)
-                    .consumerGroup(consumerGroup)
-                    .processedAt(LocalDateTime.now())
-                    .build();
-            eventRepository.saveAndFlush(eventRecord);
-            return false;
-        } catch (DataIntegrityViolationException ex) {
+        Optional<ProcessedEvent> processedEvent = eventRepository.findById(eventId);
+
+        if(processedEvent.isPresent()) {
             logger.warn("Evento duplicado detectado para eventId [{}]. Ignorando.", eventId);
             return true;
         }
+
+        ProcessedEvent eventRecord = ProcessedEvent.builder()
+                .eventId(eventId)
+                .consumerGroup(consumerGroup)
+                .processedAt(LocalDateTime.now())
+                .build();
+        eventRepository.saveAndFlush(eventRecord);
+        return false;
     }
 }

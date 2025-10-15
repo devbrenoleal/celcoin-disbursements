@@ -25,14 +25,12 @@ public class DisbursementRequestConsumer {
     @Autowired
     private IdempotencyService idempotencyService;
 
-
-
-    // Usando a anotação customizada e unificando os dois listeners
+    //A justificativa para duplicação do código é para evitar o problema de Head-of-Line Blocking
     @CustomKafkaListener(
-            topics = {KafkaTopicConfig.PIX_REQUEST_TOPIC, KafkaTopicConfig.TED_REQUEST_TOPIC},
+            topics = {KafkaTopicConfig.PIX_REQUEST_TOPIC},
             groupId = GROUP_ID
     )
-    public void consumeDisbursementRequest(DisbursementRequestEvent event) {
+    public void consumePixRequests(DisbursementRequestEvent event) {
         logger.info("Evento de requisição de desembolso recebido para o stepId: {}", event.stepId());
 
         if (idempotencyService.isDuplicate(event.stepId(), GROUP_ID)) {
@@ -40,6 +38,20 @@ public class DisbursementRequestConsumer {
         }
 
         // Delega a lógica de negócio para um serviço dedicado
+        processingService.execute(event.stepId());
+    }
+
+    @CustomKafkaListener(
+            topics = {KafkaTopicConfig.TED_REQUEST_TOPIC},
+            groupId = GROUP_ID
+    )
+    public void consumeTedRequests(DisbursementRequestEvent event) {
+        logger.info("Evento de requisição de desembolso recebido para o stepId: {}", event.stepId());
+
+        if (idempotencyService.isDuplicate(event.stepId(), GROUP_ID)) {
+            return;
+        }
+
         processingService.execute(event.stepId());
     }
 
