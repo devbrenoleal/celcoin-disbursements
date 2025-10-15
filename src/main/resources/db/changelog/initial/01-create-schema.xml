@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="1" author="breno">
+        <comment>Store batch disbursements: control status, scheduling and idempotency</comment>
+        <createTable tableName="disbursement_batch">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="client_code" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="schedule_type" type="VARCHAR(50)"/>
+            <column name="schedule_date" type="DATETIME"/>
+            <column name="recurrency" type="VARCHAR(50)"/>
+            <column name="status" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <!-- Idempotency by client_code -->
+        <addUniqueConstraint columnNames="client_code, created_at"
+                             constraintName="unique_batch_clientcode"
+                             tableName="disbursement_batch"/>
+        <createIndex indexName="idx_disbursement_batch_status" tableName="disbursement_batch">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="2" author="breno">
+        <comment>Create step table</comment>
+        <createTable tableName="disbursement_step">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="batch_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="DECIMAL(19,4)"/>
+            <column name="payload" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="external_id" type="VARCHAR(200)"/>
+            <column name="attempts" type="INT" defaultValueNumeric="0"/>
+            <column name="failure_reason" type="TEXT"/>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="disbursement_step" baseColumnNames="batch_id"
+                referencedTableName="disbursement_batch" referencedColumnNames="id"
+                constraintName="fk_step_batch"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="3" author="devbrenoleal">
+        <comment>Store already processed events</comment>
+
+        <createTable tableName="processed_events">
+            <column name="event_id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="consumer_group" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="processed_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+    </changeSet>
+</databaseChangeLog>

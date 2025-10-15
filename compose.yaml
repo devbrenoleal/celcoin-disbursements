@@ -1,0 +1,70 @@
+
+services:
+  # ===================================================================
+  # Serviço do Banco de Dados MySQL
+  # ===================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_disbursements
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'disbursements'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'rootpassword'
+    ports:
+      # Expõe a porta do MySQL para a máquina local
+      - '3307:3306'
+    volumes:
+      # Cria e utiliza um volume para persistir os dados do banco
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===================================================================
+  # Serviço do Zookeeper (Dependência do Kafka)
+  # ===================================================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.3
+    container_name: zookeeper
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - '2181:2181'
+
+  # ===================================================================
+  # Serviço do Broker Kafka
+  # ===================================================================
+  kafka:
+    image: confluentinc/cp-kafka:7.5.3
+    container_name: kafka
+    restart: always
+    depends_on:
+      - zookeeper
+    ports:
+      # Expõe a porta do Kafka para a máquina local (host)
+      - '29092:29092'
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      # Configuração de listeners: um para comunicação interna na rede Docker e outro para externa (sua máquina)
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # Configurações para ambiente de desenvolvimento com um único broker
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+# ===================================================================
+# Volumes
+# ===================================================================
+volumes:
+  mysql_data:
+    driver: local
