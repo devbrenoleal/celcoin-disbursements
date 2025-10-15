@@ -1,7 +1,6 @@
 package com.celcoin.disbursement.service;
 
 import com.celcoin.disbursement.exception.DisbursementProcessingException;
-import com.celcoin.disbursement.exception.UnexpectedException;
 import com.celcoin.disbursement.model.dto.ExternalRequestResponse;
 import com.celcoin.disbursement.model.entity.DisbursementBatch;
 import com.celcoin.disbursement.model.entity.DisbursementStep;
@@ -22,6 +21,7 @@ import java.time.LocalDateTime;
 public class DisbursementNotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(DisbursementNotificationService.class);
+    private static final String GROUP_ID = "disbursement-processor";
 
     @Autowired
     private DisbursementStepRepository stepRepository;
@@ -29,13 +29,16 @@ public class DisbursementNotificationService {
     @Autowired
     private DisbursementBatchRepository batchRepository;
 
+    @Autowired
+    private IdempotencyService idempotencyService;
+
     @Transactional
     public void processPixResponse(ExternalRequestResponse response) {
         DisbursementStep step = stepRepository.findByExternalId(response.externalId())
                 .orElseThrow(() -> new DisbursementProcessingException("400", "Erro ao recuperar informações de desembolso para o id externo: " + response.externalId()));
 
-        if(step.getStatus().equals(StepStatus.FAILED) || step.getStatus().equals(StepStatus.SUCCESS)) {
-            return; // guarantee that we will not process a response that already has been processed
+        if (idempotencyService.isDuplicate(response.externalId(), GROUP_ID)) {
+            return; // Se for duplicado, encerra o processamento imediatamente.
         }
 
         step.setStatus(response.status());
@@ -66,35 +69,38 @@ public class DisbursementNotificationService {
             step.setFailureReason(response.failureReason());
         }
 
-        stepRepository.save(step);
+        stepRepository.saveAndFlush(step);
 
         checkBatchCompletion(step.getBatch());
     }
 
     private void checkBatchCompletion(DisbursementBatch batch) {
-        // Não faz sentido verificar lotes recorrentes, pois eles nunca "terminam"
         if (batch.getScheduleType() == ScheduleType.RECURRENT) {
             return;
         }
 
-        // Recarrega o lote para garantir que temos todos os steps
-        DisbursementBatch freshBatch = batchRepository.findById(batch.getId())
-                .orElseThrow(() -> new UnexpectedException("Lote não encontrado de forma inesperada para o id " + batch.getId()));
+        long totalSteps = batchRepository.countSteps(batch.getId());
+        long successfulSteps = batchRepository.countStepsByStatus(batch.getId(), StepStatus.SUCCESS);
+        long failedSteps = batchRepository.countStepsByStatus(batch.getId(), StepStatus.FAILED);
 
-        long totalSteps = freshBatch.getSteps().size();
-        long successfulSteps = freshBatch.getSteps().stream().filter(s -> s.getStatus() == StepStatus.SUCCESS).count();
-        long failedSteps = freshBatch.getSteps().stream().filter(s -> s.getStatus() == StepStatus.FAILED).count();
+        boolean statusHasChanged = false;
+        BatchStatus newStatus = batch.getStatus();
 
         if (totalSteps == successfulSteps) {
-            batch.setStatus(BatchStatus.EXECUTED_COMPLETELY);
-            logger.info("Lote {} concluído com sucesso.", batch.getId());
-        } else if(totalSteps == failedSteps) {
-            batch.setStatus(BatchStatus.FAILED);
+            newStatus = BatchStatus.EXECUTED_COMPLETELY;
+            statusHasChanged = true;
+        } else if (totalSteps == failedSteps) {
+            newStatus = BatchStatus.FAILED;
+            statusHasChanged = true;
         } else if (totalSteps == successfulSteps + failedSteps) {
-            batch.setStatus(BatchStatus.PARTIALLY_EXECUTED);
-            logger.warn("Lote {} concluído com erros.", batch.getId());
+            newStatus = BatchStatus.PARTIALLY_EXECUTED;
+            statusHasChanged = true;
         }
 
-        batchRepository.save(batch);
+        if (statusHasChanged) {
+            batch.setStatus(newStatus);
+            batchRepository.saveAndFlush(batch);
+            logger.info("Status do lote {} atualizado para {}.", batch.getId(), newStatus);
+        }
     }
 }
