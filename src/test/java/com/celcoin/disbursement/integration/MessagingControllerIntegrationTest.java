@@ -119,6 +119,6 @@ public class MessagingControllerIntegrationTest extends BaseIntegrationTest {
 
         // Assert (Kafka)
         ConsumerRecord<String, String> received = consumerRecords.poll(500, TimeUnit.MILLISECONDS);
-        assertThat(received).isNull();
+        assertThat(received).isNull(); // Agora deve ser nulo
     }
 }
