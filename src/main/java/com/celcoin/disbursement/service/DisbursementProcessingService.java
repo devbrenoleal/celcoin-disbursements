@@ -29,7 +29,7 @@ public class DisbursementProcessingService {
         logger.info("Iniciando processamento do stepId: {}", stepId);
 
         DisbursementStep step = stepRepository.findById(stepId)
-                .orElseThrow(() -> new ResourceNotFoundException("400", "Step not found for id: " + stepId));
+                .orElseThrow(() -> new ResourceNotFoundException("400", "Step não encontrado para o id: " + stepId));
 
         // Simplificamos a checagem de idempotência, confiando mais no IdempotencyService.
         // A checagem de status ainda é uma boa prática como uma segunda barreira (guarda de estado).

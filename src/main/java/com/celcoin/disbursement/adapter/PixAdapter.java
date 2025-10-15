@@ -1,8 +1,6 @@
 package com.celcoin.disbursement.adapter;
 
 import com.celcoin.disbursement.exception.DisbursementProcessingException;
-import com.celcoin.disbursement.model.dto.DisbursementDto;
-import com.celcoin.disbursement.model.dto.DisbursementResponse;
 import com.celcoin.disbursement.model.dto.DisbursementStepRequest;
 import com.celcoin.disbursement.model.dto.pix.PixRequest;
 import com.celcoin.disbursement.model.entity.DisbursementStep;
@@ -45,17 +43,17 @@ public class PixAdapter implements DisbursementChannelAdapter {
                     stepRequest.creditParty(),
                     stepRequest.initiationType());
 
-            logger.info("Sending pix request for client {}", step.getBatch().getClientCode());
-            //restTemplate.postForEntity("") Here we would fetch client information from DB and use restTemplate
-            // or webClient to make the http call.
+            logger.info("Enviando requisiçao PIX para clientCode {}", step.getBatch().getClientCode());
+            //restTemplate.postForEntity("") Aqui faríamos um fetch dos dados do cliente do banco para fazer a requisição
+            // poderíamos também usar webClient para fazer a chamada http
 
-            // after receiving a response with the ID of the external transaction, we store it to update the step later
-            // I will simulate a response by just setting a random UUID to the external transaction
+            // na resposta, acredito que obteríamos um externalId para guardar a transação
+            // vou simular esse Id gerando ele de forma randômica
             step.setExternalId(UUID.randomUUID().toString());
             step.setUpdatedAt(LocalDateTime.now());
             stepRepository.saveAndFlush(step);
         } catch (JsonProcessingException e) {
-            logger.error("Error while serializing the payload {}", step.getPayload());
+            logger.error("Erro ao serializar paylaod {}", step.getPayload());
             throw new DisbursementProcessingException("VLP048", "Transação não concluída, cheque suas informações");
         }
     }

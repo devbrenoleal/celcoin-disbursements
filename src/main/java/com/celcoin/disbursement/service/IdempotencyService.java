@@ -33,10 +33,10 @@ public class IdempotencyService {
                     .processedAt(LocalDateTime.now())
                     .build();
             eventRepository.saveAndFlush(eventRecord);
-            return false; // Salvo com sucesso, não é duplicado
+            return false;
         } catch (DataIntegrityViolationException ex) {
             logger.warn("Evento duplicado detectado para eventId [{}]. Ignorando.", eventId);
-            return true; // Falha ao salvar, é duplicado
+            return true;
         }
     }
 }

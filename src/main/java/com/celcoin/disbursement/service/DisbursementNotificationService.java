@@ -1,7 +1,6 @@
 package com.celcoin.disbursement.service;
 
 import com.celcoin.disbursement.exception.DisbursementProcessingException;
-import com.celcoin.disbursement.exception.ResourceNotFoundException;
 import com.celcoin.disbursement.exception.UnexpectedException;
 import com.celcoin.disbursement.model.dto.ExternalRequestResponse;
 import com.celcoin.disbursement.model.entity.DisbursementBatch;
@@ -80,7 +79,7 @@ public class DisbursementNotificationService {
 
         // Recarrega o lote para garantir que temos todos os steps
         DisbursementBatch freshBatch = batchRepository.findById(batch.getId())
-                .orElseThrow(() -> new UnexpectedException("Unexpected batch not found for id " + batch.getId()));
+                .orElseThrow(() -> new UnexpectedException("Lote não encontrado de forma inesperada para o id " + batch.getId()));
 
         long totalSteps = freshBatch.getSteps().size();
         long successfulSteps = freshBatch.getSteps().stream().filter(s -> s.getStatus() == StepStatus.SUCCESS).count();

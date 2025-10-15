@@ -24,7 +24,7 @@ public class DisbursementOrchestrator {
     public void process(DisbursementStep step) {
         DisbursementStrategy strategy = strategies.get(step.getType());
 
-        if (strategy == null) throw new UnsupportedOperationException("Channel not supported: " + step.getType());
+        if (strategy == null) throw new UnsupportedOperationException("Canal não suportado: " + step.getType());
 
         strategy.execute(step);
     }

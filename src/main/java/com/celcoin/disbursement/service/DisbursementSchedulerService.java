@@ -37,11 +37,9 @@ public class DisbursementSchedulerService {
     @Scheduled(fixedRate = 60000) // Roda a cada minuto
     @Transactional
     public void triggerEligibleBatches() {
-        // A data e hora atuais são a nossa referência para todas as verificações
         LocalDateTime now = LocalDateTime.now();
-        logger.info("Scheduler iniciado em {}: procurando por lotes elegíveis...", now);
+        logger.info("Scheduler iniciado em {}: procurando por lotes elegíveis", now);
 
-        // 1. Processa lotes agendados (SCHEDULED) - Lógica inalterada
         List<DisbursementBatch> scheduledBatches = batchRepository
                 .findByStatusAndScheduleTypeAndScheduleDateLessThanEqual(
                         BatchStatus.NOT_EXECUTED,
@@ -50,7 +48,6 @@ public class DisbursementSchedulerService {
                 );
         scheduledBatches.forEach(this::processScheduledBatch);
 
-        // 2. Processa lotes recorrentes (RECURRING) - Lógica refatorada
         List<DisbursementBatch> recurringBatches = batchRepository
                 .findByStatusAndScheduleType(BatchStatus.RECURRENT, ScheduleType.RECURRENT);
         recurringBatches.forEach(batch -> processRecurringBatch(batch, now));
@@ -64,12 +61,9 @@ public class DisbursementSchedulerService {
     }
 
     private void processRecurringBatch(DisbursementBatch batch, LocalDateTime now) {
-
-        // O 'scheduleDate' do lote serve como molde (dia, hora, etc.)
         LocalDateTime templateDateTime = batch.getScheduleDate();
         boolean isExecutionTime = now.toLocalTime().isAfter(templateDateTime.toLocalTime());
 
-        // Se ainda não chegou a hora do dia para processar, ignora.
         if (!isExecutionTime) {
             return;
         }
@@ -80,13 +74,11 @@ public class DisbursementSchedulerService {
 
         switch (batch.getRecurrency()) {
             case DAILY:
-                // Roda todo dia
                 shouldRunToday = true;
                 idempotencyKey = batch.getId() + "_" + currentDate; // Ex: batchId_2025-10-15
                 break;
 
             case WEEKLY:
-                // Roda no mesmo dia da semana que a data molde
                 shouldRunToday = currentDate.getDayOfWeek() == templateDateTime.getDayOfWeek();
                 if (shouldRunToday) {
                     // Chave baseada no ano e no número da semana
@@ -98,7 +90,6 @@ public class DisbursementSchedulerService {
                 break;
 
             case MONTHLY:
-                // Roda no mesmo dia do mês que a data molde
                 shouldRunToday = currentDate.getDayOfMonth() == templateDateTime.getDayOfMonth();
                 if (shouldRunToday) {
                     idempotencyKey = String.format("%s_%d_%02d",
@@ -109,7 +100,6 @@ public class DisbursementSchedulerService {
                 break;
 
             case ANNUALLY:
-                // Roda no mesmo dia e mês que a data molde
                 shouldRunToday = currentDate.getMonth() == templateDateTime.getMonth() &&
                         currentDate.getDayOfMonth() == templateDateTime.getDayOfMonth();
                 if (shouldRunToday) {
@@ -118,7 +108,6 @@ public class DisbursementSchedulerService {
                 break;
         }
 
-        // Se hoje é o dia de rodar
         if (shouldRunToday) {
             logger.debug("Verificando recorrência para lote {}, tipo {}, chave {}", batch.getId(), batch.getRecurrency(), idempotencyKey);
 

@@ -25,7 +25,7 @@ public class KafkaEventPublisher implements EventPublisher {
             kafkaTemplate.send(topic, payload);
         } catch (Exception e) {
             logger.error("Erro ao publicar evento no tópico [{}]: {}", topic, payload, e);
-            throw new UnexpectedException("Failed publishing event", e);
+            throw new UnexpectedException("Falha ao publicar evento", e);
         }
     }
 }

@@ -6,18 +6,17 @@ import com.celcoin.disbursement.exception.ResourceNotFoundException;
 import com.celcoin.disbursement.exception.UnexpectedException;
 import com.celcoin.disbursement.gateway.EventPublisher;
 import com.celcoin.disbursement.model.dto.DisbursementDto;
-import com.celcoin.disbursement.model.dto.DisbursementErrorResponse;
 import com.celcoin.disbursement.model.dto.DisbursementRequest;
 import com.celcoin.disbursement.model.dto.DisbursementResponse;
 import com.celcoin.disbursement.model.dto.DisbursementStatusResponse;
 import com.celcoin.disbursement.model.dto.StepStatusResponse;
-import com.celcoin.disbursement.model.utils.ScheduleType;
-import com.celcoin.disbursement.model.utils.StepType;
 import com.celcoin.disbursement.model.entity.DisbursementBatch;
 import com.celcoin.disbursement.model.entity.DisbursementStep;
 import com.celcoin.disbursement.model.event.DisbursementRequestEvent;
 import com.celcoin.disbursement.model.utils.BatchStatus;
+import com.celcoin.disbursement.model.utils.ScheduleType;
 import com.celcoin.disbursement.model.utils.StepStatus;
+import com.celcoin.disbursement.model.utils.StepType;
 import com.celcoin.disbursement.repository.DisbursementBatchRepository;
 import com.celcoin.disbursement.repository.DisbursementStepRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -65,8 +64,8 @@ public class DisbursementController {
         Optional<DisbursementBatch> existingBatch = batchRepository.findByClientCode(request.clientCode());
 
         if (existingBatch.isPresent()) {
-            throw new BusinessException("409", "clientCode " + request.clientCode() + " already"
-                    + " in " + existingBatch.get().getStatus() + " status.");
+            throw new BusinessException("409", "clientCode " + request.clientCode() + " já está no status de " +
+                    existingBatch.get().getStatus());
         }
         ScheduleType scheduleType = request.schedule().type();
         BatchStatus initialStatus = switch (scheduleType) {
@@ -101,8 +100,8 @@ public class DisbursementController {
             try {
                 step.setPayload(objectMapper.writeValueAsString(disbursement.disbursementStep()));
             } catch (JsonProcessingException e) {
-                logger.error("Error while transforming step payload {}", disbursement.disbursementStep());
-                throw new UnexpectedException("Step payload is not valid");
+                logger.error("Erro ao serializar payload do step {}", disbursement.disbursementStep());
+                throw new UnexpectedException("Payload do step não é válido");
             }
 
             steps.add(stepRepository.saveAndFlush(step));

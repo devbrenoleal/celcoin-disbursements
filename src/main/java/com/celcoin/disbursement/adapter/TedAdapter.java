@@ -30,12 +30,8 @@ public class TedAdapter implements DisbursementChannelAdapter {
 
     @Override
     public void send(DisbursementStep step) {
-        //transform the payload into the payload required by the client
-        //TedRequest tedRequest = objectMapper.convertValue(payload, TedRequest.class);
-
-        logger.info("Sending TED request for client {}", step.getBatch().getClientCode());
-        //restTemplate.postForEntity("") Here we would fetch client information from DB and use restTemplate
-        // or webClient to make the http call.
+        //Veja PixAdapter
+        logger.info("Enviando requisiçao TED para clientCode {}", step.getBatch().getClientCode());
         step.setExternalId(UUID.randomUUID().toString());
         step.setUpdatedAt(LocalDateTime.now());
         stepRepository.saveAndFlush(step);

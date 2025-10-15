@@ -1,11 +1,9 @@
 package com.celcoin.disbursement.kafka;
 
 import com.celcoin.disbursement.config.KafkaTopicConfig;
-import com.celcoin.disbursement.exception.DisbursementProcessingException;
 import com.celcoin.disbursement.model.dto.ExternalRequestResponse;
 import com.celcoin.disbursement.service.DisbursementNotificationService;
 import com.celcoin.disbursement.service.IdempotencyService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +30,7 @@ public class TedResponseConsumer {
         logger.info("Mensagem de resposta TED recebida.");
 
         if (idempotencyService.isDuplicate(response.externalId(), GROUP_ID)) {
-            logger.error("Duplicate key found for externalId {}", response.externalId());
+            logger.error("Chave duplicada encontrada para externalId {}", response.externalId());
             return;
         }
 

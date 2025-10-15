@@ -4,7 +4,6 @@ import com.celcoin.disbursement.exception.BusinessException;
 import com.celcoin.disbursement.exception.DisbursementProcessingException;
 import com.celcoin.disbursement.exception.ResourceNotFoundException;
 import com.celcoin.disbursement.model.dto.DisbursementErrorResponse;
-import com.celcoin.disbursement.model.dto.DisbursementResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +29,7 @@ public class ExceptionControllerAdvice {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<DisbursementErrorResponse> handleUnkownException(Exception ex) {
-        logger.error("Unexpected Exception while processing data", ex);
+        logger.error("Erro inesperado no processamento dos dados", ex);
         return ResponseEntity.internalServerError().body(new DisbursementErrorResponse("999", "Ocorreu um erro inesperado"));
     }
 }

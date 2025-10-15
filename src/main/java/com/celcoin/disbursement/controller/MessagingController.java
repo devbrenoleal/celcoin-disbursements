@@ -1,5 +1,6 @@
 package com.celcoin.disbursement.controller;
 
+import com.celcoin.disbursement.exception.UnexpectedException;
 import com.celcoin.disbursement.gateway.EventPublisher;
 import com.celcoin.disbursement.model.dto.ExternalRequestResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -34,7 +35,7 @@ public class MessagingController {
             eventPublisher.publish(topic, jsonPayload);
             return ResponseEntity.ok("Mensagem enviada com sucesso para o tópico: " + topic);
         } catch (JsonProcessingException e) {
-            return ResponseEntity.badRequest().body("Payload da mensagem não é um JSON válido: " + e.getMessage());
+            throw new UnexpectedException("Payload da mensagem não é um JSON válido: " + e.getMessage());
         }
     }
 }
